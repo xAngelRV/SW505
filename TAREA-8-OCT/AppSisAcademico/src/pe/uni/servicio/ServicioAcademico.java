@@ -11,121 +11,123 @@ import pe.uni.excepciones.ValidacionException;
 import pe.uni.repositorio.Repositorio;
 import pe.uni.repositorio.RepositorioEnMemoria;
 
-/**
- * Fachada del sistema académico: reúne las reglas y oculta los repositorios.
- * No sabe nada de la consola.
- *
- * Función de abstracción: representa el sistema académico con sus alumnos,
- * docentes, cursos, períodos y matrículas registrados.
- *
- * Invariante de representación: toda matrícula guardada apunta a un alumno,
- * curso, docente y período registrados, y no existen dos matrículas activas
- * iguales (mismo alumno, curso y período).
- */
 public class ServicioAcademico {
-    private final Repositorio<Alumno> alumnos = new RepositorioEnMemoria<>("alumno");
-    private final Repositorio<Docente> docentes = new RepositorioEnMemoria<>("docente");
-    private final Repositorio<Curso> cursos = new RepositorioEnMemoria<>("curso");
-    private final Repositorio<Periodo> periodos = new RepositorioEnMemoria<>("período");
-    private final Repositorio<Matricula> matriculas = new RepositorioEnMemoria<>("matrícula");
-    private Matricula ultimaMatricula;
+    private final Repositorio<Alumno> repoAlumnos = new RepositorioEnMemoria<>("alumno");
+    private final Repositorio<Docente> repoDocentes = new RepositorioEnMemoria<>("docente");
+    private final Repositorio<Curso> repoCursos = new RepositorioEnMemoria<>("curso");
+    private final Repositorio<Periodo> repoPeriodos = new RepositorioEnMemoria<>("período");
+    private final Repositorio<Matricula> repoMatriculas = new RepositorioEnMemoria<>("matrícula");
 
-    // Comandos
+    private Matricula ultimaMatriculaRegistrada;
+
     public void registrarAlumno(Alumno alumno) {
-        alumnos.guardar(alumno.codigo(), alumno);
+        if (alumno == null) {
+            throw new ValidacionException("El alumno no puede ser nulo.");
+        }
+        repoAlumnos.guardar(alumno.codigo(), alumno);
     }
 
     public void registrarDocente(Docente docente) {
-        docentes.guardar(docente.codigo(), docente);
+        if (docente == null) {
+            throw new ValidacionException("El docente no puede ser nulo.");
+        }
+        repoDocentes.guardar(docente.codigo(), docente);
     }
 
     public void registrarCurso(Curso curso) {
-        cursos.guardar(curso.codigo(), curso);
+        if (curso == null) {
+            throw new ValidacionException("El curso no puede ser nulo.");
+        }
+        repoCursos.guardar(curso.codigo(), curso);
     }
 
     public void registrarPeriodo(Periodo periodo) {
-        periodos.guardar(periodo.codigo(), periodo);
-    }
-
-    public void matricular(String codigoAlumno, String codigoCurso, String codigoDocente, String codigoPeriodo) {
-        Alumno alumno = alumnos.obtener(codigoAlumno);
-        Curso curso = cursos.obtener(codigoCurso);
-        Docente docente = docentes.obtener(codigoDocente);
-        Periodo periodo = periodos.obtener(codigoPeriodo);
-
-        if(!curso.estado()) {
-            throw new ValidacionException("El curso " + curso.codigo() + " está de baja");
+        if (periodo == null) {
+            throw new ValidacionException("El período no puede ser nulo.");
         }
-        validarNoMatriculado(alumno, curso, periodo);
-
-        Matricula matricula = new Matricula(alumno, periodo, curso, docente);
-        matriculas.guardar(String.valueOf(matricula.idMatricula()), matricula);
-        ultimaMatricula = matricula;
+        repoPeriodos.guardar(periodo.codigo(), periodo);
     }
 
-    public void registrarNota(int idMatricula, double calificacion) {
-        buscarMatricula(idMatricula).registrarNota(calificacion);
+    public void matricular(String codAlumno, String codCurso, String codDocente, String codPeriodo) {
+        Alumno alumno = repoAlumnos.buscarPorId(codAlumno);
+        Curso curso = repoCursos.buscarPorId(codCurso);
+        Docente docente = repoDocentes.buscarPorId(codDocente);
+        Periodo periodo = repoPeriodos.buscarPorId(codPeriodo);
+
+        if (!curso.estado()) {
+            throw new ValidacionException("No es posible matricular: el curso " + curso.codigo() + " no está activo");
+        }
+
+        verificarDuplicidadMatricula(codAlumno, codCurso, codPeriodo);
+
+        Matricula nuevaMatricula = new Matricula(alumno, periodo, curso, docente);
+        repoMatriculas.guardar(String.valueOf(nuevaMatricula.idMatricula()), nuevaMatricula);
+        this.ultimaMatriculaRegistrada = nuevaMatricula;
     }
 
-    // Consultas
+    public void registrarNota(int idMatricula, double nota) {
+        Matricula matricula = buscarMatricula(idMatricula);
+        matricula.registrarNota(nota);
+    }
+
     public Matricula ultimaMatricula() {
-        return ultimaMatricula;
-    }
-
-    public List<Alumno> listarAlumnos() {
-        return alumnos.listar();
-    }
-
-    public List<Docente> listarDocentes() {
-        return docentes.listar();
-    }
-
-    public List<Curso> listarCursos() {
-        return cursos.listar();
+        return ultimaMatriculaRegistrada;
     }
 
     public Alumno buscarAlumno(String codigo) {
-        return alumnos.obtener(codigo);
+        return repoAlumnos.buscarPorId(codigo);
     }
 
     public Periodo buscarPeriodo(String codigo) {
-        return periodos.obtener(codigo);
+        return repoPeriodos.buscarPorId(codigo);
     }
 
     public Matricula buscarMatricula(int idMatricula) {
-        return matriculas.obtener(String.valueOf(idMatricula));
+        return repoMatriculas.buscarPorId(String.valueOf(idMatricula));
     }
 
-    public List<Matricula> matriculasPorPeriodo(String codigoPeriodo) {
-        periodos.obtener(codigoPeriodo); // valida que el período exista
+    public List<Alumno> listarAlumnos() {
+        return repoAlumnos.listarTodos();
+    }
+
+    public List<Docente> listarDocentes() {
+        return repoDocentes.listarTodos();
+    }
+
+    public List<Curso> listarCursos() {
+        return repoCursos.listarTodos();
+    }
+
+    public List<Matricula> matriculasPorPeriodo(String codPeriodo) {
+        repoPeriodos.buscarPorId(codPeriodo);
         List<Matricula> resultado = new ArrayList<>();
-        for(Matricula matricula : matriculas.listar()) {
-            if(matricula.codigoPeriodo().equals(codigoPeriodo)) {
-                resultado.add(matricula);
+        for (Matricula m : repoMatriculas.listarTodos()) {
+            if (m.codigoPeriodo().equalsIgnoreCase(codPeriodo)) {
+                resultado.add(m);
             }
         }
         return resultado;
     }
 
-    public List<Matricula> historialDeAlumno(String codigoAlumno) {
-        alumnos.obtener(codigoAlumno); // valida que el alumno exista
-        List<Matricula> resultado = new ArrayList<>();
-        for(Matricula matricula : matriculas.listar()) {
-            if(matricula.codigoAlumno().equals(codigoAlumno)) {
-                resultado.add(matricula);
+    public List<Matricula> historialDeAlumno(String codAlumno) {
+        repoAlumnos.buscarPorId(codAlumno);
+        List<Matricula> historial = new ArrayList<>();
+        for (Matricula m : repoMatriculas.listarTodos()) {
+            if (m.codigoAlumno().equalsIgnoreCase(codAlumno)) {
+                historial.add(m);
             }
         }
-        return resultado;
+        return historial;
     }
 
-    // Regla privada
-    private void validarNoMatriculado(Alumno alumno, Curso curso, Periodo periodo) {
-        for(Matricula matricula : matriculas.listar()) {
-            boolean mismoCaso = matricula.codigoAlumno().equals(alumno.codigo())
-                    && matricula.codigoCurso().equals(curso.codigo())
-                    && matricula.codigoPeriodo().equals(periodo.codigo());
-            if(mismoCaso && matricula.estaActiva()) {
-                throw new ValidacionException("El alumno ya está matriculado en ese curso y período");
+    private void verificarDuplicidadMatricula(String codAlumno, String codCurso, String codPeriodo) {
+        for (Matricula m : repoMatriculas.listarTodos()) {
+            boolean mismoAlumno = m.codigoAlumno().equalsIgnoreCase(codAlumno);
+            boolean mismoCurso = m.codigoCurso().equalsIgnoreCase(codCurso);
+            boolean mismoPeriodo = m.codigoPeriodo().equalsIgnoreCase(codPeriodo);
+
+            if (mismoAlumno && mismoCurso && mismoPeriodo && m.estaActiva()) {
+                throw new ValidacionException("El alumno ya cuenta con una matrícula activa en este curso y período");
             }
         }
     }

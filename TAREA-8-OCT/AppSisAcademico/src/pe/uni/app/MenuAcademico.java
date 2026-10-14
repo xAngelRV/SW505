@@ -11,21 +11,18 @@ import pe.uni.excepciones.ValidacionException;
 import pe.uni.servicio.ServicioAcademico;
 import pe.uni.vista.VistaConsola;
 
-/**
- * Menú de la aplicación: pide datos, llama al servicio y muestra el resultado.
- */
 public class MenuAcademico {
     private final VistaConsola vista = new VistaConsola();
     private final ServicioAcademico servicio = new ServicioAcademico();
 
     public void iniciar() {
         int opcion = -1;
-        while(opcion != 0) {
+        while (opcion != 0) {
             mostrarMenu();
             try {
-                opcion = vista.leerEntero("Opción");
+                opcion = vista.leerEntero("Seleccione una opción");
                 ejecutar(opcion);
-            } catch(ValidacionException e) {
+            } catch (ValidacionException e) {
                 vista.mostrarError(e.getMessage());
             }
         }
@@ -49,7 +46,7 @@ public class MenuAcademico {
     }
 
     private void ejecutar(int opcion) {
-        switch(opcion) {
+        switch (opcion) {
             case 1: registrarAlumno(); break;
             case 2: registrarDocente(); break;
             case 3: registrarCurso(); break;
@@ -62,161 +59,192 @@ public class MenuAcademico {
             case 10: listarMatriculasPorPeriodo(); break;
             case 11: verHistorialAlumno(); break;
             case 12: verPromedioMatricula(); break;
-            case 0: vista.mostrarMensaje("Hasta luego"); break;
-            default: throw new ValidacionException("Opción no válida");
+            case 0: vista.mostrarMensaje("Saliendo del sistema académico. ¡Hasta pronto!"); break;
+            default: throw new ValidacionException("Opción no válida. Ingrese un valor del 0 al 12.");
         }
     }
 
-    // ---------- Registros (comandos) ----------
     private void registrarAlumno() {
-        vista.mostrarTitulo("REGISTRAR ALUMNO");
-        String codigo = vista.leerTexto("Código");
+        vista.mostrarTitulo("REGISTRO DE ALUMNO");
+        String codigo = vista.leerTexto("Código del alumno");
         String nombres = vista.leerTexto("Nombres");
         String apellidos = vista.leerTexto("Apellidos");
         int edad = vista.leerEntero("Edad");
         String carrera = vista.leerTexto("Carrera");
+
         Alumno alumno = new Alumno(codigo, nombres, apellidos, edad, carrera);
         servicio.registrarAlumno(alumno);
-        vista.mostrarMensaje("Alumno registrado: " + alumno.nombreCompleto());
+        vista.mostrarMensaje("Alumno registrado exitosamente: " + alumno.nombreCompleto());
     }
 
     private void registrarDocente() {
-        vista.mostrarTitulo("REGISTRAR DOCENTE");
-        String codigo = vista.leerTexto("Código");
+        vista.mostrarTitulo("REGISTRO DE DOCENTE");
+        String codigo = vista.leerTexto("Código del docente");
         String nombres = vista.leerTexto("Nombres");
         String apellidos = vista.leerTexto("Apellidos");
         String especialidad = vista.leerTexto("Especialidad");
+
         Docente docente = new Docente(codigo, nombres, apellidos, especialidad);
         servicio.registrarDocente(docente);
-        vista.mostrarMensaje("Docente registrado: " + docente.nombreCompleto());
+        vista.mostrarMensaje("Docente registrado exitosamente: " + docente.nombreCompleto());
     }
 
     private void registrarCurso() {
-        vista.mostrarTitulo("REGISTRAR CURSO");
-        String codigo = vista.leerTexto("Código");
-        String nombre = vista.leerTexto("Nombre");
-        int creditos = vista.leerEntero("Créditos");
-        Curso curso = new Curso(codigo, nombre, creditos, true); // nace activo
+        vista.mostrarTitulo("REGISTRO DE CURSO");
+        String codigo = vista.leerTexto("Código del curso");
+        String nombre = vista.leerTexto("Nombre de la asignatura");
+        int creditos = vista.leerEntero("Cantidad de créditos");
+
+        Curso curso = new Curso(codigo, nombre, creditos, true);
         servicio.registrarCurso(curso);
-        vista.mostrarMensaje("Curso registrado: " + curso.nombre());
+        vista.mostrarMensaje("Curso registrado con éxito: " + curso.nombre());
     }
 
     private void registrarPeriodo() {
-        vista.mostrarTitulo("REGISTRAR PERÍODO");
-        String codigo = vista.leerTexto("Código (ej. 2026-2)");
+        vista.mostrarTitulo("REGISTRO DE PERÍODO");
+        String codigo = vista.leerTexto("Código del período (ej. 2026-2)");
         String descripcion = vista.leerTexto("Descripción");
-        servicio.registrarPeriodo(new Periodo(codigo, descripcion));
-        vista.mostrarMensaje("Período registrado: " + codigo);
+
+        Periodo periodo = new Periodo(codigo, descripcion);
+        servicio.registrarPeriodo(periodo);
+        vista.mostrarMensaje("Período registrado correctamente: " + periodo.codigo());
     }
 
     private void matricularAlumno() {
         vista.mostrarTitulo("MATRICULAR ALUMNO");
-        String codigoAlumno = vista.leerTexto("Código del alumno");
-        String codigoCurso = vista.leerTexto("Código del curso");
-        String codigoDocente = vista.leerTexto("Código del docente");
-        String codigoPeriodo = vista.leerTexto("Código del período");
-        servicio.matricular(codigoAlumno, codigoCurso, codigoDocente, codigoPeriodo);
-        Matricula matricula = servicio.ultimaMatricula();
-        vista.mostrarMensaje("Matrícula registrada con id " + matricula.idMatricula());
+        String codAlumno = vista.leerTexto("Código de alumno");
+        String codCurso = vista.leerTexto("Código de curso");
+        String codDocente = vista.leerTexto("Código de docente");
+        String codPeriodo = vista.leerTexto("Código de período");
+
+        servicio.matricular(codAlumno, codCurso, codDocente, codPeriodo);
+        Matricula m = servicio.ultimaMatricula();
+        vista.mostrarMensaje("Matrícula realizada exitosamente con ID N° " + m.idMatricula());
     }
 
     private void registrarNota() {
         vista.mostrarTitulo("REGISTRAR NOTA");
-        int idMatricula = vista.leerEntero("Id de la matrícula");
-        double calificacion = vista.leerDecimal("Calificación (0 a 20)");
-        servicio.registrarNota(idMatricula, calificacion);
-        vista.mostrarMensaje("Nota registrada");
+        int idMatricula = vista.leerEntero("ID de la matrícula");
+        double nota = vista.leerDecimal("Calificación (0 - 20)");
+
+        servicio.registrarNota(idMatricula, nota);
+        vista.mostrarMensaje("Nota agregada correctamente.");
     }
 
-    // ---------- Listados (consultas) ----------
     private void listarAlumnos() {
-        vista.mostrarTitulo("ALUMNOS");
-        List<Alumno> alumnos = servicio.listarAlumnos();
-        if(alumnos.isEmpty()) {
-            vista.mostrarMensaje("No hay alumnos registrados");
+        vista.mostrarTitulo("LISTADO DE ALUMNOS");
+        List<Alumno> lista = servicio.listarAlumnos();
+        if (lista.isEmpty()) {
+            vista.mostrarMensaje("No hay alumnos registrados en el sistema.");
+            return;
         }
-        for(Alumno a : alumnos) {
-            vista.mostrarMensaje(String.format("%-10s %-30s %3d años  %s",
-                    a.codigo(), a.nombreCompleto(), a.edad(), a.carrera()));
+
+        System.out.printf("%-12s %-32s %-6s %s%n", "CÓDIGO", "ALUMNO", "EDAD", "CARRERA");
+        System.out.println("--------------------------------------------------------------------------------");
+        for (Alumno a : lista) {
+            System.out.printf("%-12s %-32s %-6d %s%n",
+                    a.codigo(), a.nombreCompleto(), a.edad(), a.carrera());
         }
     }
 
     private void listarDocentes() {
-        vista.mostrarTitulo("DOCENTES");
-        List<Docente> docentes = servicio.listarDocentes();
-        if(docentes.isEmpty()) {
-            vista.mostrarMensaje("No hay docentes registrados");
+        vista.mostrarTitulo("LISTADO DE DOCENTES");
+        List<Docente> lista = servicio.listarDocentes();
+        if (lista.isEmpty()) {
+            vista.mostrarMensaje("No hay docentes registrados en el sistema.");
+            return;
         }
-        for(Docente d : docentes) {
-            vista.mostrarMensaje(String.format("%-10s %-30s %s",
-                    d.codigo(), d.nombreCompleto(), d.especialidad()));
+
+        System.out.printf("%-12s %-32s %s%n", "CÓDIGO", "DOCENTE", "ESPECIALIDAD");
+        System.out.println("--------------------------------------------------------------------------------");
+        for (Docente d : lista) {
+            System.out.printf("%-12s %-32s %s%n",
+                    d.codigo(), d.nombreCompleto(), d.especialidad());
         }
     }
 
     private void listarCursos() {
-        vista.mostrarTitulo("CURSOS");
-        List<Curso> cursos = servicio.listarCursos();
-        if(cursos.isEmpty()) {
-            vista.mostrarMensaje("No hay cursos registrados");
+        vista.mostrarTitulo("LISTADO DE CURSOS");
+        List<Curso> lista = servicio.listarCursos();
+        if (lista.isEmpty()) {
+            vista.mostrarMensaje("No hay cursos registrados en el sistema.");
+            return;
         }
-        for(Curso c : cursos) {
+
+        System.out.printf("%-10s %-35s %-10s %s%n", "CÓDIGO", "NOMBRE", "CRÉDITOS", "ESTADO");
+        System.out.println("--------------------------------------------------------------------------------");
+        for (Curso c : lista) {
             String estado = c.estado() ? "Activo" : "De baja";
-            vista.mostrarMensaje(String.format("%-10s %-35s %2d créditos  %s",
-                    c.codigo(), c.nombre(), c.creditos(), estado));
+            System.out.printf("%-10s %-35s %-10d %s%n",
+                    c.codigo(), c.nombre(), c.creditos(), estado);
         }
     }
 
     private void listarMatriculasPorPeriodo() {
         vista.mostrarTitulo("MATRÍCULAS POR PERÍODO");
-        String codigoPeriodo = vista.leerTexto("Código del período");
-        Periodo periodo = servicio.buscarPeriodo(codigoPeriodo);
-        List<Matricula> matriculas = servicio.matriculasPorPeriodo(codigoPeriodo);
-        vista.mostrarMensaje("Período " + periodo.codigo() + ": " + periodo.descripcion());
-        if(matriculas.isEmpty()) {
-            vista.mostrarMensaje("No hay matrículas en este período");
+        String codPeriodo = vista.leerTexto("Ingrese el código del período");
+        Periodo periodo = servicio.buscarPeriodo(codPeriodo);
+        List<Matricula> matriculas = servicio.matriculasPorPeriodo(codPeriodo);
+
+        vista.mostrarMensaje("Período: " + periodo.codigo() + " - " + periodo.descripcion());
+        if (matriculas.isEmpty()) {
+            vista.mostrarMensaje("No existen matrículas registradas para este período.");
+            return;
         }
-        for(Matricula m : matriculas) {
-            vista.mostrarMensaje(String.format("Id %-3d %-10s %-25s %-8s %-10s %s",
+
+        System.out.printf("%-5s %-10s %-25s %-10s %-10s %s%n",
+                "ID", "COD.ALU", "ALUMNO", "CURSO", "DOCENTE", "ESTADO");
+        System.out.println("--------------------------------------------------------------------------------");
+        for (Matricula m : matriculas) {
+            System.out.printf("%-5d %-10s %-25s %-10s %-10s %s%n",
                     m.idMatricula(), m.codigoAlumno(), m.NomApeAlumno(),
-                    m.codigoCurso(), m.codigoDocente(), m.estadoMatricula()));
+                    m.codigoCurso(), m.codigoDocente(), m.estadoMatricula());
         }
     }
 
     private void verHistorialAlumno() {
-        vista.mostrarTitulo("HISTORIAL DE ALUMNO");
-        String codigoAlumno = vista.leerTexto("Código del alumno");
-        Alumno alumno = servicio.buscarAlumno(codigoAlumno);
-        List<Matricula> historial = servicio.historialDeAlumno(codigoAlumno);
-        vista.mostrarMensaje(alumno.nombreCompleto() + " - " + alumno.carrera());
-        if(historial.isEmpty()) {
-            vista.mostrarMensaje("El alumno no tiene matrículas");
+        vista.mostrarTitulo("HISTORIAL ACADÉMICO DE ALUMNO");
+        String codAlumno = vista.leerTexto("Ingrese el código del alumno");
+        Alumno alumno = servicio.buscarAlumno(codAlumno);
+        List<Matricula> historial = servicio.historialDeAlumno(codAlumno);
+
+        vista.mostrarMensaje("Estudiante: " + alumno.nombreCompleto() + " (" + alumno.carrera() + ")");
+        if (historial.isEmpty()) {
+            vista.mostrarMensaje("El alumno no registra matrículas hasta el momento.");
+            return;
         }
-        for(Matricula m : historial) {
-            vista.mostrarMensaje(String.format("Período %s | %s %s | %s | Notas: %s | Promedio: %.2f",
+
+        System.out.println("--------------------------------------------------------------------------------");
+        for (Matricula m : historial) {
+            System.out.printf("[%s] %s - %s | Estado: %s | Notas: [%s] | Prom: %.2f%n",
                     m.codigoPeriodo(), m.codigoCurso(), m.nombreCurso(),
-                    m.estadoMatricula(), textoNotas(m), m.promedio()));
+                    m.estadoMatricula(), obtenerCadenaNotas(m), m.promedio());
         }
     }
 
     private void verPromedioMatricula() {
-        vista.mostrarTitulo("PROMEDIO DE UNA MATRÍCULA");
-        int idMatricula = vista.leerEntero("Id de la matrícula");
+        vista.mostrarTitulo("PROMEDIO DE MATRÍCULA");
+        int idMatricula = vista.leerEntero("Ingrese el ID de la matrícula");
         Matricula matricula = servicio.buscarMatricula(idMatricula);
-        vista.mostrarMensaje(matricula.NomApeAlumno() + " - " + matricula.nombreCurso());
-        vista.mostrarMensaje("Notas: " + textoNotas(matricula));
+
+        vista.mostrarMensaje("Alumno : " + matricula.NomApeAlumno());
+        vista.mostrarMensaje("Curso  : " + matricula.nombreCurso() + " (" + matricula.codigoCurso() + ")");
+        vista.mostrarMensaje("Notas  : [" + obtenerCadenaNotas(matricula) + "]");
         vista.mostrarMensaje(String.format("Promedio: %.2f", matricula.promedio()));
     }
 
-    // Convierte las notas de una matrícula en texto: "12.0  15.5"
-    private String textoNotas(Matricula matricula) {
+    private String obtenerCadenaNotas(Matricula matricula) {
         List<Nota> notas = matricula.notas();
-        if(notas.isEmpty()) {
-            return "sin notas";
+        if (notas.isEmpty()) {
+            return "Sin notas";
         }
-        String texto = "";
-        for(Nota nota : notas) {
-            texto += nota.calificacion() + "  ";
+        StringBuilder sb = new StringBuilder();
+        for (int i = 0; i < notas.size(); i++) {
+            sb.append(notas.get(i).calificacion());
+            if (i < notas.size() - 1) {
+                sb.append(", ");
+            }
         }
-        return texto.trim();
+        return sb.toString();
     }
 }

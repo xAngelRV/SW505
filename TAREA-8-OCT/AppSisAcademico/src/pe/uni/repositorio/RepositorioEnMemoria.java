@@ -5,45 +5,60 @@ import java.util.List;
 import java.util.Map;
 import pe.uni.excepciones.ValidacionException;
 
-/**
- * Implementación del repositorio que guarda todo en memoria.
- *
- * Función de abstracción: representa el conjunto de elementos registrados,
- * cada uno identificado por su clave y en orden de registro.
- *
- * Invariante de representación: no hay claves repetidas ni vacías,
- * y ningún elemento es null.
- */
 public class RepositorioEnMemoria<T> implements Repositorio<T> {
-    private final String nombreEntidad; // solo para los mensajes de error
-    private final Map<String, T> elementos = new LinkedHashMap<>();
+    private final String nombreEntidad;
+    private final Map<String, T> datos = new LinkedHashMap<>();
 
     public RepositorioEnMemoria(String nombreEntidad) {
+        if (nombreEntidad == null || nombreEntidad.isBlank()) {
+            throw new IllegalArgumentException("El nombre de la entidad no puede ser nulo o vacío.");
+        }
         this.nombreEntidad = nombreEntidad;
+        checkRep();
+    }
+
+    private void checkRep() {
+        if (datos == null || nombreEntidad == null || nombreEntidad.isBlank()) {
+            throw new IllegalStateException("RI violado: mapa de datos o nombre nulos.");
+        }
+        for (Map.Entry<String, T> entry : datos.entrySet()) {
+            if (entry.getKey() == null || entry.getKey().isBlank() || entry.getValue() == null) {
+                throw new IllegalStateException("RI violado: clave o valor nulos en el repositorio.");
+            }
+        }
     }
 
     @Override
-    public void guardar(String clave, T elemento) {
-        if(clave == null || clave.isBlank() || elemento == null) { // protege el invariante
-            throw new ValidacionException("No se puede guardar " + nombreEntidad + " sin código");
+    public void guardar(String id, T item) {
+        if (id == null || id.trim().isEmpty()) {
+            throw new ValidacionException("El identificador de " + nombreEntidad + " no puede ser nulo ni vacío.");
         }
-        if(elementos.containsKey(clave)) {
-            throw new ValidacionException("Ya existe " + nombreEntidad + " con código " + clave);
+        if (item == null) {
+            throw new ValidacionException("No se permite registrar un valor nulo para " + nombreEntidad + ".");
         }
-        elementos.put(clave, elemento);
+        if (datos.containsKey(id)) {
+            throw new ValidacionException("Ya existe un(a) " + nombreEntidad + " con el código " + id + ".");
+        }
+
+        datos.put(id, item);
+        checkRep();
     }
 
     @Override
-    public T obtener(String clave) {
-        T elemento = elementos.get(clave);
-        if(elemento == null) {
-            throw new ValidacionException("No se encontró " + nombreEntidad + " con código " + clave);
+    public T buscarPorId(String id) {
+        if (id == null || !datos.containsKey(id)) {
+            throw new ValidacionException("No se encontró " + nombreEntidad + " con código: " + id);
         }
-        return elemento;
+        return datos.get(id);
     }
 
     @Override
-    public List<T> listar() {
-        return List.copyOf(elementos.values()); // copia inmutable, no se expone el mapa interno
+    public List<T> listarTodos() {
+        return List.copyOf(datos.values());
+    }
+
+    @Override
+    public boolean existe(String id) {
+        return id != null && datos.containsKey(id);
     }
 }
