@@ -1,2 +1,2 @@
 # SW505
-Repositorio personal para el curso de Construcción de Software
+Repositorio de estudiante para el curso SW505
